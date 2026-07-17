@@ -35,6 +35,9 @@ describe('GitHubProvider', () => {
       http.get('https://api.github.com/repos/alice/sol', () =>
         HttpResponse.json({ owner: { login: 'alice' }, name: 'sol' }),
       ),
+      http.get('https://api.github.com/repos/alice/sol/contents/index.json', () =>
+        new HttpResponse(null, { status: 404 }),
+      ),
       http.get('https://api.github.com/repos/alice/sol/git/ref/heads/main', () =>
         HttpResponse.json({ object: { sha: 'HEAD' } }),
       ),

@@ -3,65 +3,22 @@ import { GitHubClient } from './GitHubClient';
 import { GitDataService } from './GitDataService';
 import { RepoManager } from './RepoManager';
 import { IndexManager } from './IndexManager';
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function renderCommitMessage(template: string, snapshot: QuestionSnapshot): string {
-  return template
-    .replace(/\{slug\}/g, snapshot.metadata.slug)
-    .replace(/\{title\}/g, snapshot.metadata.title)
-    .replace(/\{date\}/g, today());
-}
-
-function basePath(config: SyncConfig, snapshot: QuestionSnapshot): string {
-  if (config.folderLayout === 'flat') {
-    return snapshot.metadata.slug;
-  }
-
-  return `${snapshot.metadata.format}/${snapshot.metadata.slug}`;
-}
+import { ReadmeGenerator } from '../generators/ReadmeGenerator';
+import { MetadataFileGenerator } from '../generators/MetadataFileGenerator';
+import { RootReadmeGenerator } from '../generators/RootReadmeGenerator';
+import { logger } from '../utils/Logger';
 
 export class GitHubProvider implements RepositoryProvider {
   private readonly client = new GitHubClient();
-  private readonly dataService = new GitDataService(this.client);
-  private readonly repoManager = new RepoManager(this.client);
-  private readonly indexManager = new IndexManager(this.client);
-
-  protected renderReadme(snapshot: QuestionSnapshot): string {
-    return `# ${snapshot.metadata.title}\n\n${snapshot.metadata.description}`;
-  }
-
-  protected renderMetadataJson(snapshot: QuestionSnapshot): string {
-    return JSON.stringify(
-      {
-        schemaVersion: 1,
-        title: snapshot.metadata.title,
-        slug: snapshot.metadata.slug,
-        difficulty: snapshot.metadata.difficulty,
-        format: snapshot.metadata.format,
-        duration: snapshot.metadata.duration,
-        url: snapshot.metadata.url,
-        languages: snapshot.metadata.languages,
-        companies: snapshot.metadata.companies,
-        hash: snapshot.hash,
-        completedAt: snapshot.completedAt,
-        extensionVersion: snapshot.extensionVersion,
-        snapshotVersion: snapshot.snapshotVersion,
-      },
-      null,
-      2,
-    );
-  }
-
-  protected renderRootReadme(index: { solutions: Record<string, RepoIndexEntry> }): string {
-    const solvedCount = Object.keys(index.solutions).length;
-    return `# GreatFrontend Solutions\n\n**Total solved:** ${solvedCount}\n`;
-  }
+  private readonly repos = new RepoManager(this.client);
+  private readonly gitData = new GitDataService(this.client);
+  private readonly index = new IndexManager(this.client);
+  private readonly readme = new ReadmeGenerator();
+  private readonly metaFile = new MetadataFileGenerator();
+  private readonly rootReadme = new RootReadmeGenerator();
 
   async ensureRepository(token: string, config: SyncConfig): Promise<{ owner: string; repo: string }> {
-    return this.repoManager.ensureRepo(token, config);
+    return this.repos.ensureRepo(token, config);
   }
 
   async synchronize(
@@ -70,24 +27,71 @@ export class GitHubProvider implements RepositoryProvider {
     config: SyncConfig,
   ): Promise<{ commitSha: string }> {
     const { owner, repo } = await this.ensureRepository(token, config);
-    const pathPrefix = basePath(config, snapshot);
+    const base = this.basePath(snapshot, config);
+
+    const [currentIndex, headRef] = await Promise.all([
+      this.index.get(owner, repo, token),
+      this.client.getRef(owner, repo, token, 'heads/main'),
+    ]);
+    const parentSha = headRef.object.sha;
+
+    const newEntry: RepoIndexEntry = {
+      hash: snapshot.hash,
+      commitSha: parentSha,
+      syncedAt: new Date().toISOString(),
+      extensionVersion: snapshot.extensionVersion,
+      snapshotVersion: snapshot.snapshotVersion,
+      category: snapshot.metadata.format,
+      title: snapshot.metadata.title,
+    };
+    const updatedIndex = {
+      ...currentIndex,
+      solutions: { ...currentIndex.solutions, [snapshot.metadata.slug]: newEntry },
+    };
 
     const files: Array<{ path: string; content: string }> = [
-      ...snapshot.files.map((file) => ({ path: `${pathPrefix}/workspace/${file.path}`, content: file.content })),
-      { path: `${pathPrefix}/README.md`, content: this.renderReadme(snapshot) },
-      { path: `${pathPrefix}/metadata.json`, content: this.renderMetadataJson(snapshot) },
+      { path: `${base}/README.md`, content: this.readme.generate(snapshot) },
+      { path: `${base}/metadata.json`, content: this.metaFile.generate(snapshot) },
+      ...snapshot.files.map((file) => ({
+        path: `${base}/workspace/${file.path}`,
+        content: file.content,
+      })),
+      { path: 'index.json', content: JSON.stringify(updatedIndex, null, 2) },
     ];
-
-    const message = renderCommitMessage(config.commitMessageTemplate, snapshot);
-    const tx = await this.dataService.commit(owner, repo, token, snapshot, files, message);
-
-    if (!tx.commitSha) {
-      throw new Error('Commit missing sha');
+    if (config.generateRootReadme) {
+      files.push({
+        path: 'README.md',
+        content: this.rootReadme.generate(updatedIndex, config.folderLayout),
+      });
     }
 
-    void this.indexManager;
-    void this.renderRootReadme;
+    const message = this.commitMessage(snapshot, config);
+    const tx = await this.gitData.commit(owner, repo, token, snapshot, files, message);
+
+    if (!tx.commitSha) {
+      throw new Error('Commit returned no SHA');
+    }
+
+    logger.info('github.sync.committed', {
+      slug: snapshot.metadata.slug,
+      commitSha: tx.commitSha,
+      durationMs: tx.durationMs,
+      fileCount: files.length,
+    });
 
     return { commitSha: tx.commitSha };
+  }
+
+  private basePath(snapshot: QuestionSnapshot, config: SyncConfig): string {
+    return config.folderLayout === 'categorized'
+      ? `${snapshot.metadata.format}/${snapshot.metadata.slug}`
+      : snapshot.metadata.slug;
+  }
+
+  private commitMessage(snapshot: QuestionSnapshot, config: SyncConfig): string {
+    return config.commitMessageTemplate
+      .replace(/\{slug\}/g, snapshot.metadata.slug)
+      .replace(/\{title\}/g, snapshot.metadata.title)
+      .replace(/\{date\}/g, new Date().toISOString().slice(0, 10));
   }
 }
