@@ -1,8 +1,15 @@
 import '@testing-library/jest-dom/vitest';
 import { chrome } from 'vitest-chrome/lib/index.esm.js';
-import { vi, beforeEach } from 'vitest';
+import { vi, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 
 (globalThis as unknown as { chrome: typeof chrome }).chrome = chrome;
+
+const require = createRequire(import.meta.url);
+const { setupServer } = await import(pathToFileURL(require.resolve('msw/node')).href);
+
+export const server = setupServer();
 
 if (!chrome.storage.session) {
   (chrome.storage as unknown as { session: typeof chrome.storage.local }).session = {
@@ -104,8 +111,19 @@ function installStorageMocks(): void {
 
 installStorageMocks();
 
-beforeEach(() => {
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+
+afterEach(() => {
+  server.resetHandlers();
   vi.clearAllMocks();
+  storageState = {};
+  sessionState = {};
+  installStorageMocks();
+});
+
+afterAll(() => server.close());
+
+beforeEach(() => {
   storageState = {};
   sessionState = {};
   installStorageMocks();
