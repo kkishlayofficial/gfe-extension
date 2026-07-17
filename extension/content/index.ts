@@ -1,2 +1,5 @@
-console.warn('[GFE Sync] content loaded');
-export {};
+import { PageBridge } from './PageBridge';
+
+const bridge = new PageBridge();
+bridge.inject();
+bridge.listen();
