@@ -1,2 +1,4 @@
-console.warn('[GFE Sync] injected loaded');
+import { FetchInterceptor } from './FetchInterceptor';
+
+new FetchInterceptor().install();
 export {};
