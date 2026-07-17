@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "GreatFrontend Sync",
+  "version": "0.1.0",
+  "description": "Automatically sync completed GreatFrontend solutions to a private GitHub repository.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA_REPLACE_WITH_YOUR_DEV_KEY_",
+  "permissions": ["storage", "identity"],
+  "host_permissions": [
+    "https://www.greatfrontend.com/*",
+    "https://api.github.com/*"
+  ],
+  "background": {
+    "service_worker": "background/index.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.greatfrontend.com/*"],
+      "js": ["content/index.ts"],
+      "run_at": "document_start",
+      "world": "ISOLATED"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/index.html",
+    "default_title": "GreatFrontend Sync"
+  },
+  "options_page": "options/index.html",
+  "web_accessible_resources": [
+    {
+      "resources": ["injected.js"],
+      "matches": ["https://www.greatfrontend.com/*"]
+    }
+  ]
+}

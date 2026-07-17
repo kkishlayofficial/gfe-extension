@@ -1,0 +1,29 @@
+{
+  "name": "gfe-extension-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\""
+  },
+  "devDependencies": {
+    "prettier": "3.3.3",
+    "eslint": "8.57.1",
+    "@typescript-eslint/parser": "7.18.0",
+    "@typescript-eslint/eslint-plugin": "7.18.0",
+    "eslint-plugin-react": "7.37.1",
+    "eslint-plugin-react-hooks": "4.6.2",
+    "eslint-config-prettier": "9.1.0",
+    "typescript": "5.6.3",
+    "vitest": "2.1.2",
+    "vitest-chrome": "0.1.0",
+    "@testing-library/jest-dom": "6.5.0"
+  }
+}
