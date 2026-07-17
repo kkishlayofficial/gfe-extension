@@ -1,0 +1,92 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(32, 129, 226, 0.18), transparent 34%),
+    linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+}
+
+html,
+body {
+  margin: 0;
+  min-width: 340px;
+  min-height: 100%;
+}
+
+body {
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+button {
+  border: 1px solid #c9d6e6;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #12304a;
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(18, 48, 74, 0.08);
+}
+
+button:hover {
+  background: #f4f8fc;
+}
+
+.gfe-popup {
+  display: grid;
+  gap: 16px;
+  color: #12304a;
+}
+
+.gfe-popup__header {
+  display: grid;
+  gap: 4px;
+}
+
+.gfe-popup__header h1 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.gfe-popup__header p {
+  margin: 0;
+  font-size: 13px;
+  color: #5d7186;
+}
+
+.gfe-auth {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(18, 48, 74, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.gfe-auth--disconnected,
+.gfe-auth--reconnect {
+  justify-content: center;
+}
+
+.gfe-auth__message {
+  margin: 0;
+  flex: 1;
+  color: #7b5b13;
+}
+
+.gfe-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.gfe-username {
+  flex: 1;
+  font-weight: 700;
+}

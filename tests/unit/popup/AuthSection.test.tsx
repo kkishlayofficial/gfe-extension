@@ -1,0 +1,60 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen } from '../../../extension/test-utils/testing-library';
+import { AuthSection } from '../../../extension/popup/components/AuthSection';
+
+describe('AuthSection', () => {
+  beforeEach(() => {
+    chrome.runtime.sendMessage = vi.fn();
+  });
+
+  it('shows DisconnectedView when not connected', () => {
+    render(<AuthSection auth={{ connected: false, tokenExpired: false }} />);
+
+    expect(screen.getByRole('button', { name: /connect github/i })).toBeInTheDocument();
+  });
+
+  it('shows ReconnectView when token expired', () => {
+    render(<AuthSection auth={{ connected: false, tokenExpired: true }} />);
+
+    expect(screen.getByRole('button', { name: /reconnect github/i })).toBeInTheDocument();
+    expect(screen.getByText(/token expired/i)).toBeInTheDocument();
+  });
+
+  it('shows ConnectedView with username and avatar', () => {
+    render(
+      <AuthSection
+        auth={{ connected: true, tokenExpired: false, username: 'alice', avatarUrl: 'https://av' }}
+      />,
+    );
+
+    expect(screen.getByText('alice')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /alice/i })).toHaveAttribute('src', 'https://av');
+    expect(screen.getByRole('button', { name: /disconnect/i })).toBeInTheDocument();
+  });
+
+  it('Connect button sends AUTH_START message', () => {
+    render(<AuthSection auth={{ connected: false, tokenExpired: false }} />);
+
+    screen.getByRole('button', { name: /connect github/i }).click();
+
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ type: 'AUTH_START' });
+  });
+
+  it('Reconnect button sends AUTH_START message', () => {
+    render(<AuthSection auth={{ connected: false, tokenExpired: true }} />);
+
+    screen.getByRole('button', { name: /reconnect github/i }).click();
+
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ type: 'AUTH_START' });
+  });
+
+  it('Disconnect button sends AUTH_REVOKE message', () => {
+    render(
+      <AuthSection auth={{ connected: true, tokenExpired: false, username: 'a', avatarUrl: 'x' }} />,
+    );
+
+    screen.getByRole('button', { name: /disconnect/i }).click();
+
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ type: 'AUTH_REVOKE' });
+  });
+});

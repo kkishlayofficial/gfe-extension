@@ -1,0 +1,1 @@
+export { fireEvent, render, screen } from '../node_modules/@testing-library/react/dist/index.js';
