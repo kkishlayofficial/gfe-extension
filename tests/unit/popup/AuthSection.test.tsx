@@ -1,6 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '../../../extension/test-utils/testing-library';
 import { AuthSection } from '../../../extension/popup/components/AuthSection';
+import { SyncState, type AppState } from '../../../extension/types';
+
+function makeState(auth: AppState['auth']): AppState {
+  return {
+    syncState: SyncState.Idle,
+    auth,
+    config: {
+      repoName: 'greatfrontend-solutions',
+      folderLayout: 'categorized',
+      commitMessageTemplate: 'feat: add {slug}',
+      autoSync: true,
+      generateRootReadme: true,
+      repoVisibility: 'private',
+    },
+  };
+}
 
 describe('AuthSection', () => {
   beforeEach(() => {
@@ -8,13 +24,13 @@ describe('AuthSection', () => {
   });
 
   it('shows DisconnectedView when not connected', () => {
-    render(<AuthSection auth={{ connected: false, tokenExpired: false }} />);
+    render(<AuthSection state={makeState({ connected: false, tokenExpired: false })} />);
 
     expect(screen.getByRole('button', { name: /connect github/i })).toBeInTheDocument();
   });
 
   it('shows ReconnectView when token expired', () => {
-    render(<AuthSection auth={{ connected: false, tokenExpired: true }} />);
+    render(<AuthSection state={makeState({ connected: false, tokenExpired: true })} />);
 
     expect(screen.getByRole('button', { name: /reconnect github/i })).toBeInTheDocument();
     expect(screen.getByText(/token expired/i)).toBeInTheDocument();
@@ -23,7 +39,7 @@ describe('AuthSection', () => {
   it('shows ConnectedView with username and avatar', () => {
     render(
       <AuthSection
-        auth={{ connected: true, tokenExpired: false, username: 'alice', avatarUrl: 'https://av' }}
+        state={makeState({ connected: true, tokenExpired: false, username: 'alice', avatarUrl: 'https://av' })}
       />,
     );
 
@@ -33,7 +49,7 @@ describe('AuthSection', () => {
   });
 
   it('Connect button sends AUTH_START message', () => {
-    render(<AuthSection auth={{ connected: false, tokenExpired: false }} />);
+    render(<AuthSection state={makeState({ connected: false, tokenExpired: false })} />);
 
     screen.getByRole('button', { name: /connect github/i }).click();
 
@@ -41,7 +57,7 @@ describe('AuthSection', () => {
   });
 
   it('Reconnect button sends AUTH_START message', () => {
-    render(<AuthSection auth={{ connected: false, tokenExpired: true }} />);
+    render(<AuthSection state={makeState({ connected: false, tokenExpired: true })} />);
 
     screen.getByRole('button', { name: /reconnect github/i }).click();
 
@@ -50,7 +66,9 @@ describe('AuthSection', () => {
 
   it('Disconnect button sends AUTH_REVOKE message', () => {
     render(
-      <AuthSection auth={{ connected: true, tokenExpired: false, username: 'a', avatarUrl: 'x' }} />,
+      <AuthSection
+        state={makeState({ connected: true, tokenExpired: false, username: 'a', avatarUrl: 'x' })}
+      />,
     );
 
     screen.getByRole('button', { name: /disconnect/i }).click();

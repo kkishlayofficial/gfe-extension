@@ -1,84 +1,50 @@
 import { useEffect, useState } from 'react';
-import type { AppState, ExtensionEvent, ExtensionMessage } from '../types';
-import { SyncConfigSchema, SyncState } from '../types';
 import { AuthSection } from './components/AuthSection';
-import './styles.css';
+import { SyncSection } from './components/SyncSection';
+import { RepoSection } from './components/RepoSection';
+import { ErrorBanner } from './components/ErrorBanner';
+import { AppState, ExtensionEvent, SyncState } from '../types';
 
-const initialState: AppState = {
-  syncState: SyncState.Idle,
-  auth: { connected: false, tokenExpired: false },
-  config: SyncConfigSchema.parse({}),
-};
-
-function isPopupEvent(message: unknown): message is ExtensionEvent {
-  return typeof message === 'object' && message !== null && 'type' in message;
+async function loadState(): Promise<AppState> {
+  return await chrome.runtime.sendMessage({ type: 'GET_STATE' });
 }
 
-export function App(): JSX.Element {
-  const [state, setState] = useState<AppState>(initialState);
+export function App() {
+  const [state, setState] = useState<AppState | null>(null);
+  const [error, setError] = useState<string | undefined>();
 
   useEffect(() => {
-    const requestState: ExtensionMessage = { type: 'GET_STATE' };
-
-    chrome.runtime.sendMessage(requestState, (response: AppState | undefined) => {
-      if (response) {
-        setState(response);
-      }
-    });
-
-    const listener = (message: unknown): void => {
-      if (!isPopupEvent(message)) {
-        return;
-      }
-
-      if (message.type === 'STATE_CHANGED') {
-        setState((current) => ({ ...current, syncState: message.payload.state }));
-        return;
-      }
-
-      if (message.type === 'AUTH_COMPLETE') {
-        setState((current) => ({
-          ...current,
-          auth: {
-            connected: true,
-            tokenExpired: false,
-            username: message.payload.username,
-            avatarUrl: message.payload.avatarUrl,
-          },
-        }));
-        return;
-      }
-
-      if (message.type === 'AUTH_REVOKED') {
-        setState((current) => ({
-          ...current,
-          auth: { connected: false, tokenExpired: false },
-        }));
-        return;
-      }
-
-      if (message.type === 'TOKEN_EXPIRED') {
-        setState((current) => ({
-          ...current,
-          auth: { ...current.auth, connected: false, tokenExpired: true },
-        }));
+    void loadState().then(setState);
+    const listener = (event: ExtensionEvent) => {
+      if (event.type === 'STATE_CHANGED') {
+        setState((prev) => (prev ? { ...prev, syncState: event.payload.state } : prev));
+      } else if (event.type === 'SYNC_COMPLETED') {
+        void loadState().then(setState);
+        setError(undefined);
+      } else if (event.type === 'SYNC_FAILED') {
+        setError(event.payload.error);
+      } else if (event.type === 'AUTH_COMPLETE' || event.type === 'AUTH_REVOKED' || event.type === 'TOKEN_EXPIRED') {
+        void loadState().then(setState);
       }
     };
-
     chrome.runtime.onMessage.addListener(listener);
-
-    return () => {
-      chrome.runtime.onMessage.removeListener(listener);
-    };
+    return () => chrome.runtime.onMessage.removeListener(listener);
   }, []);
 
+  if (!state) return <div className="loading">Loading…</div>;
   return (
-    <main className="gfe-popup">
-      <header className="gfe-popup__header">
-        <h1>GreatFrontend Sync</h1>
-        <p>Auth status and sync state.</p>
-      </header>
-      <AuthSection auth={state.auth} />
+    <main>
+      <ErrorBanner message={error ?? state.lastError} />
+      <AuthSection state={state} />
+      {state.auth.connected && (
+        <>
+          <SyncSection state={state} />
+          <RepoSection state={state} />
+        </>
+      )}
+      <footer>
+        <a href="options.html" target="_blank" rel="noreferrer">Options</a>
+      </footer>
     </main>
   );
 }

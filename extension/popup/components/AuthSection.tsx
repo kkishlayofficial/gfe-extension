@@ -1,21 +1,21 @@
 import type { AppState, ExtensionMessage } from '../../types';
 
 interface Props {
-  auth: AppState['auth'];
+  state: AppState;
 }
 
 function send(message: ExtensionMessage): void {
   chrome.runtime.sendMessage(message);
 }
 
-export function AuthSection({ auth }: Props): JSX.Element {
-  if (auth.connected) {
+export function AuthSection({ state }: Props): JSX.Element {
+  if (state.auth.connected) {
     return (
       <section className="gfe-auth gfe-auth--connected">
-        {auth.avatarUrl ? (
-          <img className="gfe-avatar" src={auth.avatarUrl} alt={auth.username ?? 'user'} />
+        {state.auth.avatarUrl ? (
+          <img className="gfe-avatar" src={state.auth.avatarUrl} alt={state.auth.username ?? 'user'} />
         ) : null}
-        <span className="gfe-username">{auth.username ?? 'GitHub user'}</span>
+        <span className="gfe-username">{state.auth.username ?? 'GitHub user'}</span>
         <button type="button" onClick={() => send({ type: 'AUTH_REVOKE' })}>
           Disconnect
         </button>
@@ -23,7 +23,7 @@ export function AuthSection({ auth }: Props): JSX.Element {
     );
   }
 
-  if (auth.tokenExpired) {
+  if (state.auth.tokenExpired) {
     return (
       <section className="gfe-auth gfe-auth--reconnect">
         <p className="gfe-auth__message">Token expired, please reconnect.</p>
