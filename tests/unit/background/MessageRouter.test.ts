@@ -60,7 +60,7 @@ describe('MessageRouter', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(sendResponse).toHaveBeenCalled();
-    const arg = sendResponse.mock.calls[0][0];
+    const arg = sendResponse.mock.calls[0]![0];
     expect(arg.syncState).toBe(SyncState.Idle);
     expect(arg.auth).toBeDefined();
     expect(arg.config).toBeDefined();

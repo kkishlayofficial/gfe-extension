@@ -45,16 +45,19 @@ export class MessageRouter {
     const config = await ConfigStore.get();
     const lastSync = await ExtensionStorage.getLastSync();
 
-    return {
-      syncState: this.deps.orchestrator.getState(),
-      auth: {
-        connected: !!token,
-        tokenExpired: false,
-        username: user?.username,
-        avatarUrl: user?.avatarUrl,
-      },
-      config,
-      lastSync,
+    const auth = {
+      connected: !!token,
+      tokenExpired: false,
+      ...(user?.username ? { username: user.username } : {}),
+      ...(user?.avatarUrl ? { avatarUrl: user.avatarUrl } : {}),
     };
+
+    const state: AppState = {
+      syncState: this.deps.orchestrator.getState(),
+      auth,
+      config,
+    };
+    if (lastSync !== undefined) state.lastSync = lastSync;
+    return state;
   }
 }

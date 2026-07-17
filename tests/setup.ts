@@ -11,7 +11,7 @@ const { setupServer } = await import(pathToFileURL(require.resolve('msw/node')).
 
 export const server = setupServer();
 
-if (!chrome.storage.session) {
+if (!(chrome.storage as any).session) {
   (chrome.storage as unknown as { session: typeof chrome.storage.local }).session = {
     get: vi.fn(),
     set: vi.fn(),
@@ -24,7 +24,7 @@ let storageState: Record<string, unknown> = {};
 let sessionState: Record<string, unknown> = {};
 
 function ensureSessionStorage(): void {
-  if (!chrome.storage.session) {
+  if (!(chrome.storage as any).session) {
     (chrome.storage as unknown as { session: typeof chrome.storage.local }).session = {
       get: vi.fn(),
       set: vi.fn(),
@@ -38,7 +38,8 @@ function applyStorageMock<T extends 'local' | 'session'>(
   area: typeof chrome.storage.local,
   state: Record<string, unknown>,
 ): void {
-  area.get.mockImplementation((keys, callback) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (area.get as any).mockImplementation((keys: any, callback?: (items: Record<string, unknown>) => void) => {
     const result: Record<string, unknown> = {};
 
     if (keys == null) {
@@ -60,14 +61,14 @@ function applyStorageMock<T extends 'local' | 'session'>(
     }
 
     if (callback) {
-      callback(result);
+      (callback as (items: Record<string, unknown>) => void)(result);
       return;
     }
 
     return Promise.resolve(result);
   });
 
-  area.set.mockImplementation((items, callback) => {
+  area.set.mockImplementation((items: Record<string, unknown>, callback?: () => void) => {
     Object.assign(state, items);
     if (callback) {
       callback();
@@ -77,7 +78,7 @@ function applyStorageMock<T extends 'local' | 'session'>(
     return Promise.resolve();
   });
 
-  area.remove.mockImplementation((keys, callback) => {
+  area.remove.mockImplementation((keys: string | string[], callback?: () => void) => {
     const list = typeof keys === 'string' ? [keys] : keys;
     for (const key of list) {
       delete state[key];
@@ -90,7 +91,7 @@ function applyStorageMock<T extends 'local' | 'session'>(
     return Promise.resolve();
   });
 
-  area.clear.mockImplementation((callback) => {
+  area.clear.mockImplementation((callback?: () => void) => {
     for (const key of Object.keys(state)) {
       delete state[key];
     }
@@ -106,7 +107,7 @@ function applyStorageMock<T extends 'local' | 'session'>(
 function installStorageMocks(): void {
   ensureSessionStorage();
   applyStorageMock(chrome.storage.local, storageState);
-  applyStorageMock(chrome.storage.session, sessionState);
+  applyStorageMock((chrome.storage as any).session, sessionState);
 }
 
 installStorageMocks();

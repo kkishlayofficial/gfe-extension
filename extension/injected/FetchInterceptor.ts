@@ -13,7 +13,11 @@ export class FetchInterceptor {
       const response = await originalFetch(input, init);
 
       const url =
-        input instanceof Request ? input.url : input instanceof URL ? input.toString() : String(input);
+        input instanceof Request
+          ? input.url
+          : input instanceof URL
+            ? input.toString()
+            : String(input);
 
       if (url.includes('/api/trpc/questionProgress.add')) {
         try {

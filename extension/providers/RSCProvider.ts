@@ -57,7 +57,7 @@ function findQuestion(node: unknown): QuestionShape | null {
 
 function formatFromUrl(url: string): string | null {
   const match = url.match(/\/questions\/([^/]+)\//);
-  return match ? match[1] : null;
+  return match ? match[1]! : null;
 }
 
 export class RSCProvider implements IMetadataProvider {

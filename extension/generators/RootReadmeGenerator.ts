@@ -19,7 +19,9 @@ export class RootReadmeGenerator {
       grouped.set(entry.category, categoryEntries);
     }
 
-    for (const [category, items] of [...grouped.entries()].sort(([left], [right]) => left.localeCompare(right))) {
+    for (const [category, items] of [...grouped.entries()].sort(([left], [right]) =>
+      left.localeCompare(right),
+    )) {
       const rows = items
         .sort((left, right) => left[1].title.localeCompare(right[1].title))
         .map(([slug, entry]) => {

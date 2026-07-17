@@ -39,11 +39,19 @@ function makeDeps(
 ) {
   const bus = new EventBus();
   const states: SyncState[] = [];
-  bus.on('STATE_CHANGED', (event) => states.push(event.payload.state));
+  bus.on('STATE_CHANGED', (event) => {
+    states.push(event.payload.state);
+  });
   const events: string[] = [];
-  bus.on('SYNC_COMPLETED', () => events.push('COMPLETED'));
-  bus.on('SYNC_FAILED', () => events.push('FAILED'));
-  bus.on('SYNC_SKIPPED', () => events.push('SKIPPED'));
+  bus.on('SYNC_COMPLETED', () => {
+    events.push('COMPLETED');
+  });
+  bus.on('SYNC_FAILED', () => {
+    events.push('FAILED');
+  });
+  bus.on('SYNC_SKIPPED', () => {
+    events.push('SKIPPED');
+  });
 
   const auth = {
     validateStoredToken: vi.fn(async () => overrides.authValid ?? true),

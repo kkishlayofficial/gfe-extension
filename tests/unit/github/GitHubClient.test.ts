@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { server } from '../../setup';
@@ -25,12 +25,19 @@ describe('GitHubClient', () => {
     });
 
     it('returns null on 404', async () => {
-      server.use(http.get('https://api.github.com/repos/o/r', () => new HttpResponse(null, { status: 404 })));
+      server.use(
+        http.get('https://api.github.com/repos/o/r', () => new HttpResponse(null, { status: 404 })),
+      );
       expect(await c.getRepo('o', 'r', T)).toBeNull();
     });
 
     it('throws GitHubApiError on 500', async () => {
-      server.use(http.get('https://api.github.com/repos/o/r', () => new HttpResponse('boom', { status: 500 })));
+      server.use(
+        http.get(
+          'https://api.github.com/repos/o/r',
+          () => new HttpResponse('boom', { status: 500 }),
+        ),
+      );
       await expect(c.getRepo('o', 'r', T)).rejects.toBeInstanceOf(GitHubApiError);
     });
   });
@@ -39,7 +46,7 @@ describe('GitHubClient', () => {
     it('POSTs to /user/repos with name/private/description', async () => {
       let received: unknown;
       server.use(
-        http.post('https://api.github.com/user/repos', async ({ request }) => {
+        http.post('https://api.github.com/user/repos', async ({ request }: { request: Request }) => {
           received = await request.json();
           return HttpResponse.json({ owner: { login: 'o' }, name: 'r' }, { status: 201 });
         }),
@@ -72,7 +79,7 @@ describe('GitHubClient', () => {
     it('createBlob base64-encodes content', async () => {
       let received: unknown;
       server.use(
-        http.post('https://api.github.com/repos/o/r/git/blobs', async ({ request }) => {
+        http.post('https://api.github.com/repos/o/r/git/blobs', async ({ request }: { request: Request }) => {
           received = await request.json();
           return HttpResponse.json({ sha: 'BLOB' }, { status: 201 });
         }),
@@ -85,7 +92,7 @@ describe('GitHubClient', () => {
     it('createTree posts base_tree + tree items', async () => {
       let received: unknown;
       server.use(
-        http.post('https://api.github.com/repos/o/r/git/trees', async ({ request }) => {
+        http.post('https://api.github.com/repos/o/r/git/trees', async ({ request }: { request: Request }) => {
           received = await request.json();
           return HttpResponse.json({ sha: 'TREE2' }, { status: 201 });
         }),
@@ -103,12 +110,16 @@ describe('GitHubClient', () => {
     it('createCommit posts message/tree/parents', async () => {
       let received: unknown;
       server.use(
-        http.post('https://api.github.com/repos/o/r/git/commits', async ({ request }) => {
+        http.post('https://api.github.com/repos/o/r/git/commits', async ({ request }: { request: Request }) => {
           received = await request.json();
           return HttpResponse.json({ sha: 'CMT' }, { status: 201 });
         }),
       );
-      const r = await c.createCommit('o', 'r', T, { message: 'm', treeSha: 'T', parentShas: ['P'] });
+      const r = await c.createCommit('o', 'r', T, {
+        message: 'm',
+        treeSha: 'T',
+        parentShas: ['P'],
+      });
       expect(r).toEqual({ sha: 'CMT' });
       expect(received).toEqual({ message: 'm', tree: 'T', parents: ['P'] });
     });
@@ -116,13 +127,29 @@ describe('GitHubClient', () => {
     it('updateRef PATCHes ref', async () => {
       let received: unknown;
       server.use(
-        http.patch('https://api.github.com/repos/o/r/git/refs/heads/main', async ({ request }) => {
+        http.patch('https://api.github.com/repos/o/r/git/refs/heads/main', async ({ request }: { request: Request }) => {
           received = await request.json();
           return HttpResponse.json({ ref: 'refs/heads/main' });
         }),
       );
       await c.updateRef('o', 'r', T, 'heads/main', 'NEW');
       expect(received).toEqual({ sha: 'NEW', force: false });
+    });
+
+    it('createOrUpdateFile omits sha when not provided', async () => {
+      let received: unknown;
+      server.use(
+        http.put('https://api.github.com/repos/o/r/contents/foo.md', async ({ request }: { request: Request }) => {
+          received = await request.json();
+          return HttpResponse.json({ commit: { sha: 'CMT2' } }, { status: 200 });
+        }),
+      );
+      const r = await c.createOrUpdateFile('o', 'r', T, 'foo.md', {
+        message: 'm',
+        content: 'hi',
+      });
+      expect(r).toEqual({ commitSha: 'CMT2' });
+      expect(received).toEqual({ message: 'm', content: Buffer.from('hi').toString('base64') });
     });
   });
 
@@ -142,7 +169,10 @@ describe('GitHubClient', () => {
 
     it('returns null on 404', async () => {
       server.use(
-        http.get('https://api.github.com/repos/o/r/contents/missing', () => new HttpResponse(null, { status: 404 })),
+        http.get(
+          'https://api.github.com/repos/o/r/contents/missing',
+          () => new HttpResponse(null, { status: 404 }),
+        ),
       );
       expect(await c.getContents('o', 'r', T, 'missing')).toBeNull();
     });
@@ -152,7 +182,7 @@ describe('GitHubClient', () => {
     it('base64-encodes content and optionally passes sha', async () => {
       let received: unknown;
       server.use(
-        http.put('https://api.github.com/repos/o/r/contents/foo.md', async ({ request }) => {
+        http.put('https://api.github.com/repos/o/r/contents/foo.md', async ({ request }: { request: Request }) => {
           received = await request.json();
           return HttpResponse.json({ commit: { sha: 'CMT2' } }, { status: 200 });
         }),
@@ -188,10 +218,30 @@ describe('GitHubClient', () => {
       expect(n).toBe(2);
     });
 
+    it('retries after secondary rate limiting signaled by 403 + X-RateLimit-Remaining: 0', async () => {
+      let n = 0;
+      server.use(
+        http.get('https://api.github.com/repos/o/r', () => {
+          n++;
+          if (n === 1) {
+            return new HttpResponse('rate', {
+              status: 403,
+              headers: { 'X-RateLimit-Remaining': '0', 'Retry-After': '0' },
+            });
+          }
+          return HttpResponse.json({ owner: { login: 'o' }, name: 'r' });
+        }),
+      );
+      const r = await c.getRepo('o', 'r', T);
+      expect(r?.name).toBe('r');
+      expect(n).toBe(2);
+    });
+
     it('throws GitHubApiError with rateLimited=true after exhausting retries', async () => {
       server.use(
-        http.get('https://api.github.com/repos/o/r', () =>
-          new HttpResponse('rate', { status: 429, headers: { 'Retry-After': '0' } }),
+        http.get(
+          'https://api.github.com/repos/o/r',
+          () => new HttpResponse('rate', { status: 429, headers: { 'Retry-After': '0' } }),
         ),
       );
       const err = await c.getRepo('o', 'r', T).catch((e) => e);
@@ -247,6 +297,70 @@ describe('GitHubClient', () => {
       );
       await expect(c.createBlob('o', 'r', T, 'x', 'utf-8')).rejects.toBeInstanceOf(GitHubApiError);
       expect(n).toBe(1);
+    });
+
+    it('uses Buffer fallback when base64 DOM helpers are unavailable', async () => {
+      const globals = globalThis as typeof globalThis & {
+        btoa?: typeof btoa;
+        atob?: typeof atob;
+      };
+
+      let received: unknown;
+      try {
+        vi.stubGlobal('btoa', undefined);
+        vi.stubGlobal('atob', undefined);
+
+        server.use(
+          http.put('https://api.github.com/repos/o/r/contents/foo.md', async ({ request }: { request: Request }) => {
+            received = await request.json();
+            return HttpResponse.json({ commit: { sha: 'CMT2' } }, { status: 200 });
+          }),
+          http.get('https://api.github.com/repos/o/r/contents/index.json', () =>
+            HttpResponse.json({
+              content: Buffer.from('hello world').toString('base64'),
+              sha: 'FSHA',
+              encoding: 'base64',
+            }),
+          ),
+        );
+        await expect(
+          c.createOrUpdateFile('o', 'r', T, 'foo.md', {
+            message: 'm',
+            content: 'hello',
+          }),
+        ).resolves.toEqual({ commitSha: 'CMT2' });
+        expect(received).toEqual({
+          message: 'm',
+          content: Buffer.from('hello').toString('base64'),
+        });
+        expect(await c.getContents('o', 'r', T, 'index.json')).toEqual({
+          content: 'hello world',
+          sha: 'FSHA',
+        });
+      } finally {
+        vi.unstubAllGlobals();
+        if (globals.btoa) {
+          vi.stubGlobal('btoa', globals.btoa);
+        }
+        if (globals.atob) {
+          vi.stubGlobal('atob', globals.atob);
+        }
+      }
+    });
+
+    it('returns null for non-JSON responses', async () => {
+      server.use(
+        http.get(
+          'https://api.github.com/repos/o/r/contents/readme.txt',
+          () =>
+            new HttpResponse('plain text', {
+              status: 200,
+              headers: { 'Content-Type': 'text/plain' },
+            }),
+        ),
+      );
+
+      expect(await c.getContents('o', 'r', T, 'readme.txt')).toBeNull();
     });
   });
 });

@@ -17,9 +17,7 @@ describe('RepoManager', () => {
 
   it('returns existing repo when present', async () => {
     server.use(
-      http.get('https://api.github.com/user', () =>
-        HttpResponse.json({ login: 'alice' }),
-      ),
+      http.get('https://api.github.com/user', () => HttpResponse.json({ login: 'alice' })),
       http.get('https://api.github.com/repos/alice/my-repo', () =>
         HttpResponse.json({ owner: { login: 'alice' }, name: 'my-repo' }),
       ),
@@ -31,8 +29,11 @@ describe('RepoManager', () => {
     let created = false;
     server.use(
       http.get('https://api.github.com/user', () => HttpResponse.json({ login: 'alice' })),
-      http.get('https://api.github.com/repos/alice/my-repo', () => new HttpResponse(null, { status: 404 })),
-      http.post('https://api.github.com/user/repos', async ({ request }) => {
+      http.get(
+        'https://api.github.com/repos/alice/my-repo',
+        () => new HttpResponse(null, { status: 404 }),
+      ),
+      http.post('https://api.github.com/user/repos', async ({ request }: { request: Request }) => {
         created = true;
         const body = await request.json();
         expect(body).toMatchObject({ name: 'my-repo', private: true });
@@ -48,12 +49,26 @@ describe('RepoManager', () => {
     server.use(
       http.get('https://api.github.com/user', () => HttpResponse.json({ login: 'a' })),
       http.get('https://api.github.com/repos/a/p', () => new HttpResponse(null, { status: 404 })),
-      http.post('https://api.github.com/user/repos', async ({ request }) => {
+      http.post('https://api.github.com/user/repos', async ({ request }: { request: Request }) => {
         const body = (await request.json()) as { private: boolean };
         expect(body.private).toBe(false);
         return HttpResponse.json({ owner: { login: 'a' }, name: 'p' }, { status: 201 });
       }),
     );
     await rm.ensureRepo('T', cfgPub);
+  });
+
+  it('throws when the resolved user payload has no login', async () => {
+    server.use(http.get('https://api.github.com/user', () => HttpResponse.json({})));
+
+    await expect(rm.ensureRepo('T', cfg)).rejects.toThrow('Failed to resolve user login');
+  });
+
+  it('throws when the user lookup fails', async () => {
+    server.use(
+      http.get('https://api.github.com/user', () => new HttpResponse('boom', { status: 500 })),
+    );
+
+    await expect(rm.ensureRepo('T', cfg)).rejects.toMatchObject({ status: 500 });
   });
 });

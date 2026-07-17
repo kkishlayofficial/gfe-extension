@@ -48,7 +48,7 @@ export class GitHubClient {
     const url = `${BASE}${path}`;
 
     const doRequest = async (): Promise<T | null> => {
-      const response = await fetch(url, {
+      const requestInit: RequestInit = {
         method: options.method,
         headers: {
           Authorization: `Bearer ${options.token}`,
@@ -56,14 +56,22 @@ export class GitHubClient {
           'X-GitHub-Api-Version': '2022-11-28',
           ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         },
-        body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-      });
+      };
+
+      if (options.body !== undefined) {
+        requestInit.body = JSON.stringify(options.body);
+      }
+
+      const response = await fetch(url, requestInit);
 
       if (options.allow404 && response.status === 404) {
         return null;
       }
 
-      if (response.status === 429 || (response.status === 403 && response.headers.get('X-RateLimit-Remaining') === '0')) {
+      if (
+        response.status === 429 ||
+        (response.status === 403 && response.headers.get('X-RateLimit-Remaining') === '0')
+      ) {
         const retryAfter = response.headers.get('Retry-After');
         logger.warn('github-rate-limited', { path, retryAfter });
         throw new GitHubApiError(response.status, `Rate limited: ${path}`, true);
@@ -71,7 +79,10 @@ export class GitHubClient {
 
       if (!response.ok) {
         const text = await response.text().catch(() => '');
-        throw new GitHubApiError(response.status, `GitHub ${options.method} ${path} → ${response.status} ${text}`.trim());
+        throw new GitHubApiError(
+          response.status,
+          `GitHub ${options.method} ${path} → ${response.status} ${text}`.trim(),
+        );
       }
 
       if (response.status === 204) {
@@ -90,7 +101,8 @@ export class GitHubClient {
       maxAttempts: 3,
       baseDelayMs: 1000,
       shouldRetry: isRetryableError,
-      onRetry: (attempt, error) => logger.warn('github-retry', { path, attempt, err: String(error) }),
+      onRetry: (attempt, error) =>
+        logger.warn('github-retry', { path, attempt, err: String(error) }),
     });
   }
 
@@ -113,7 +125,12 @@ export class GitHubClient {
     const repo = await this.request<{ owner: { login: string }; name: string }>('/user/repos', {
       method: 'POST',
       token,
-      body: { name: opts.name, private: opts.private, description: opts.description, auto_init: true },
+      body: {
+        name: opts.name,
+        private: opts.private,
+        description: opts.description,
+        auto_init: true,
+      },
     });
 
     if (!repo) {
@@ -129,10 +146,13 @@ export class GitHubClient {
     token: string,
     ref: string,
   ): Promise<{ object: { sha: string } }> {
-    const response = await this.request<{ object: { sha: string } }>(`/repos/${owner}/${repo}/git/ref/${ref}`, {
-      method: 'GET',
-      token,
-    });
+    const response = await this.request<{ object: { sha: string } }>(
+      `/repos/${owner}/${repo}/git/ref/${ref}`,
+      {
+        method: 'GET',
+        token,
+      },
+    );
 
     if (!response) {
       throw new GitHubApiError(500, `getRef null: ${ref}`);
@@ -147,10 +167,13 @@ export class GitHubClient {
     token: string,
     sha: string,
   ): Promise<{ tree: { sha: string } }> {
-    const response = await this.request<{ tree: { sha: string } }>(`/repos/${owner}/${repo}/git/commits/${sha}`, {
-      method: 'GET',
-      token,
-    });
+    const response = await this.request<{ tree: { sha: string } }>(
+      `/repos/${owner}/${repo}/git/commits/${sha}`,
+      {
+        method: 'GET',
+        token,
+      },
+    );
 
     if (!response) {
       throw new GitHubApiError(500, `getCommit null: ${sha}`);
@@ -266,11 +289,14 @@ export class GitHubClient {
       body.sha = opts.sha;
     }
 
-    const response = await this.request<{ commit: { sha: string } }>(`/repos/${owner}/${repo}/contents/${path}`, {
-      method: 'PUT',
-      token,
-      body,
-    });
+    const response = await this.request<{ commit: { sha: string } }>(
+      `/repos/${owner}/${repo}/contents/${path}`,
+      {
+        method: 'PUT',
+        token,
+        body,
+      },
+    );
 
     if (!response) {
       throw new GitHubApiError(500, 'createOrUpdateFile null');

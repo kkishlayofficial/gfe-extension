@@ -63,7 +63,7 @@ describe('GitHubProvider integration', () => {
       ),
       http.post(
         'https://api.github.com/repos/me/greatfrontend-solutions/git/blobs',
-        async ({ request }) => {
+        async ({ request }: { request: Request }) => {
           const body = (await request.json()) as { content: string };
           const sha = `blobsha-${Object.keys(blobContents).length + 1}`;
           blobContents[sha] = body.content;
@@ -72,12 +72,14 @@ describe('GitHubProvider integration', () => {
       ),
       http.post(
         'https://api.github.com/repos/me/greatfrontend-solutions/git/trees',
-        async ({ request }) => {
+        async ({ request }: { request: Request }) => {
           const body = (await request.json()) as { tree: Array<{ path: string; sha?: string }> };
-          treeItems = body.tree.map((item) => ({
-            ...item,
-            content: item.sha ? blobContents[item.sha] : undefined,
-          }));
+          treeItems = body.tree.map((item) => {
+            const r: { path: string; sha?: string; content?: string } = { ...item };
+            const c = item.sha ? blobContents[item.sha] : undefined;
+            if (c !== undefined) r.content = c;
+            return r;
+          });
           return HttpResponse.json({ sha: 'treesha' });
         },
       ),
@@ -129,7 +131,7 @@ describe('GitHubProvider integration', () => {
     const parsed = JSON.parse(indexFile!.content!) as {
       solutions: Record<string, { commitSha: string }>;
     };
-    expect(parsed.solutions['event-emitter'].commitSha).toBe('refsha');
+    expect(parsed.solutions['event-emitter']?.commitSha).toBe('refsha');
   });
 
   it('omits root README from the commit when generateRootReadme is false', async () => {

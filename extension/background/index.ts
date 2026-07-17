@@ -13,22 +13,22 @@ const auth = new AuthHandler(eventBus);
 const resolver = new MetadataResolver([new RSCProvider(), new DOMProvider()]);
 const provider = new GitHubProvider();
 const orchestrator = new SyncOrchestrator({
-	eventBus,
-	auth,
-	resolver,
-	provider,
-	extensionVersion: (import.meta.env.EXTENSION_VERSION as string) ?? '0.0.0',
+  eventBus,
+  auth,
+  resolver,
+  provider,
+  extensionVersion: (import.meta.env.EXTENSION_VERSION as string) ?? '0.0.0',
 });
 const router = new MessageRouter({ orchestrator, auth, eventBus });
 
 router.register();
 
 chrome.runtime.onStartup.addListener(() => {
-	logger.info('startup');
-	void auth.validateStoredToken();
+  logger.info('startup');
+  void auth.validateStoredToken();
 });
 
 chrome.runtime.onInstalled.addListener(() => {
-	logger.info('installed');
-	void auth.validateStoredToken();
+  logger.info('installed');
+  void auth.validateStoredToken();
 });

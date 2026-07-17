@@ -3,7 +3,7 @@ import { AuthSection } from './components/AuthSection';
 import { SyncSection } from './components/SyncSection';
 import { RepoSection } from './components/RepoSection';
 import { ErrorBanner } from './components/ErrorBanner';
-import { AppState, ExtensionEvent, SyncState } from '../types';
+import { AppState, ExtensionEvent } from '../types';
 
 async function loadState(): Promise<AppState> {
   return await chrome.runtime.sendMessage({ type: 'GET_STATE' });
@@ -12,6 +12,7 @@ async function loadState(): Promise<AppState> {
 export function App() {
   const [state, setState] = useState<AppState | null>(null);
   const [error, setError] = useState<string | undefined>();
+  const errorMessage = error ?? state?.lastError;
 
   useEffect(() => {
     void loadState().then(setState);
@@ -23,7 +24,11 @@ export function App() {
         setError(undefined);
       } else if (event.type === 'SYNC_FAILED') {
         setError(event.payload.error);
-      } else if (event.type === 'AUTH_COMPLETE' || event.type === 'AUTH_REVOKED' || event.type === 'TOKEN_EXPIRED') {
+      } else if (
+        event.type === 'AUTH_COMPLETE' ||
+        event.type === 'AUTH_REVOKED' ||
+        event.type === 'TOKEN_EXPIRED'
+      ) {
         void loadState().then(setState);
       }
     };
@@ -34,7 +39,7 @@ export function App() {
   if (!state) return <div className="loading">Loading…</div>;
   return (
     <main>
-      <ErrorBanner message={error ?? state.lastError} />
+      <ErrorBanner {...(errorMessage ? { message: errorMessage } : {})} />
       <AuthSection state={state} />
       {state.auth.connected && (
         <>
@@ -43,7 +48,9 @@ export function App() {
         </>
       )}
       <footer>
-        <a href="options.html" target="_blank" rel="noreferrer">Options</a>
+        <a href="options.html" target="_blank" rel="noreferrer">
+          Options
+        </a>
       </footer>
     </main>
   );

@@ -17,15 +17,13 @@ export class PageBridge {
         return;
       }
 
-      const data = event.data as
-        | {
-            type?: string;
-            workspace?: CaptureResult['workspace'];
-            metadata?: CaptureResult['metadata'];
-            timestamp?: number;
-            pageUrl?: string;
-          }
-        | null;
+      const data = event.data as {
+        type?: string;
+        workspace?: CaptureResult['workspace'];
+        metadata?: CaptureResult['metadata'];
+        timestamp?: number;
+        pageUrl?: string;
+      } | null;
 
       if (!data || data.type !== 'GFE_COMPLETE') {
         return;

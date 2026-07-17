@@ -15,8 +15,13 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "jsx": "react-jsx",
-    "types": ["chrome", "vite/client", "vitest/globals"]
+    "types": ["chrome", "vite/client", "vitest/globals"],
+    "paths": {
+      "zod": ["./node_modules/zod/lib"],
+      "msw": ["./node_modules/msw"],
+      "msw/node": ["./node_modules/msw/node"]
+    }
   },
   "include": ["**/*.ts", "**/*.tsx", "../tests/**/*.ts"],
-  "exclude": ["dist", "node_modules"]
+  "exclude": ["dist", "node_modules", "../tests/shims.ts", "../tests/setup.ts"]
 }

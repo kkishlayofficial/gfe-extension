@@ -20,7 +20,8 @@ export default defineConfig({
         injected: 'injected/index.ts',
       },
       output: {
-        entryFileNames: (chunk) => (chunk.name === 'injected' ? 'injected.js' : 'assets/[name]-[hash].js'),
+        entryFileNames: (chunk) =>
+          chunk.name === 'injected' ? 'injected.js' : 'assets/[name]-[hash].js',
       },
     },
   },

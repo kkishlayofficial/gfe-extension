@@ -12,12 +12,12 @@ function stubEnv(): void {
 describe('AuthHandler', () => {
   let bus: EventBus;
   let handler: AuthHandler;
-  let emitSpy: ReturnType<typeof vi.spyOn>;
+  let emitSpy: any;
 
   beforeEach(() => {
     stubEnv();
     bus = new EventBus();
-    emitSpy = vi.spyOn(bus, 'emit');
+    emitSpy = vi.spyOn(bus as any, 'emit');
     handler = new AuthHandler(bus);
     chrome.runtime.sendMessage = vi.fn();
     (crypto as unknown as { getRandomValues: (a: Uint8Array) => Uint8Array }).getRandomValues = (arr: Uint8Array) => {

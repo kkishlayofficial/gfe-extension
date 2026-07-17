@@ -29,7 +29,9 @@ export class ReadmeGenerator {
     }
 
     builder.heading(2, 'Project Structure').list(snapshot.files.map((file) => file.path));
-    builder.hr().paragraph(`_Synced at ${snapshot.completedAt} · extension v${snapshot.extensionVersion}_`);
+    builder
+      .hr()
+      .paragraph(`_Synced at ${snapshot.completedAt} · extension v${snapshot.extensionVersion}_`);
 
     return builder.build();
   }

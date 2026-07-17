@@ -37,7 +37,8 @@ export class EventBus {
   }
 
   on<T extends EventType>(type: T, handler: Handler<T>): void {
-    const handlers = this.handlers.get(type) ?? new Set<(event: ExtensionEvent) => void | Promise<void>>();
+    const handlers =
+      this.handlers.get(type) ?? new Set<(event: ExtensionEvent) => void | Promise<void>>();
     handlers.add(handler as (event: ExtensionEvent) => void | Promise<void>);
     this.handlers.set(type, handlers);
   }

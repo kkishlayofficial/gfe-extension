@@ -17,7 +17,10 @@ export class GitHubProvider implements RepositoryProvider {
   private readonly metaFile = new MetadataFileGenerator();
   private readonly rootReadme = new RootReadmeGenerator();
 
-  async ensureRepository(token: string, config: SyncConfig): Promise<{ owner: string; repo: string }> {
+  async ensureRepository(
+    token: string,
+    config: SyncConfig,
+  ): Promise<{ owner: string; repo: string }> {
     return this.repos.ensureRepo(token, config);
   }
 

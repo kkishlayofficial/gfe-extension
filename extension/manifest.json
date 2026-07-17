@@ -5,10 +5,7 @@
   "description": "Automatically sync completed GreatFrontend solutions to a private GitHub repository.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA_REPLACE_WITH_YOUR_DEV_KEY_",
   "permissions": ["storage", "identity"],
-  "host_permissions": [
-    "https://www.greatfrontend.com/*",
-    "https://api.github.com/*"
-  ],
+  "host_permissions": ["https://www.greatfrontend.com/*", "https://api.github.com/*"],
   "background": {
     "service_worker": "background/index.ts",
     "type": "module"

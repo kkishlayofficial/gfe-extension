@@ -52,6 +52,24 @@ describe('DOMProvider', () => {
     expect(meta.format).toBe('react');
   });
 
+  it('returns 0 when duration text does not match a known unit', async () => {
+    const meta = await provider.getMetadata({
+      domSnapshot: {
+        title: 'x',
+        difficulty: 'easy',
+        duration: 'soon',
+        description: '',
+        url: 'https://www.greatfrontend.com/questions/javascript/counter',
+      },
+    });
+
+    expect(meta.duration).toBe(0);
+  });
+
+  it('throws when domSnapshot is missing', async () => {
+    await expect(provider.getMetadata({})).rejects.toThrow('No DOM snapshot available');
+  });
+
   it('throws when URL not a GFE question URL', async () => {
     await expect(
       provider.getMetadata({

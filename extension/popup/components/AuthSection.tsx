@@ -13,7 +13,11 @@ export function AuthSection({ state }: Props): JSX.Element {
     return (
       <section className="gfe-auth gfe-auth--connected">
         {state.auth.avatarUrl ? (
-          <img className="gfe-avatar" src={state.auth.avatarUrl} alt={state.auth.username ?? 'user'} />
+          <img
+            className="gfe-avatar"
+            src={state.auth.avatarUrl}
+            alt={state.auth.username ?? 'user'}
+          />
         ) : null}
         <span className="gfe-username">{state.auth.username ?? 'GitHub user'}</span>
         <button type="button" onClick={() => send({ type: 'AUTH_REVOKE' })}>

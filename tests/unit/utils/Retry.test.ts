@@ -11,7 +11,7 @@ describe('withRetry', () => {
 
   it('retries on failure and eventually succeeds', async () => {
     const fn = vi
-      .fn<[], Promise<string>>()
+      .fn<() => Promise<string>>()
       .mockRejectedValueOnce(new Error('a'))
       .mockRejectedValueOnce(new Error('b'))
       .mockResolvedValueOnce('ok');
@@ -29,7 +29,7 @@ describe('withRetry', () => {
   it('calls onRetry hook with attempt number and error', async () => {
     const onRetry = vi.fn();
     const fn = vi
-      .fn<[], Promise<string>>()
+      .fn<() => Promise<string>>()
       .mockRejectedValueOnce(new Error('first'))
       .mockResolvedValueOnce('ok');
     await withRetry(fn, { maxAttempts: 3, baseDelayMs: 1, onRetry });
@@ -44,7 +44,7 @@ describe('withRetry', () => {
       return originalSetTimeout(fn, 0);
     });
     const fn = vi
-      .fn<[], Promise<string>>()
+      .fn<() => Promise<string>>()
       .mockRejectedValueOnce(new Error('a'))
       .mockRejectedValueOnce(new Error('b'))
       .mockResolvedValueOnce('ok');
@@ -82,7 +82,7 @@ describe('withRetry', () => {
   it('passes the thrown error to shouldRetry', async () => {
     const seen: Error[] = [];
     const fn = vi
-      .fn<[], Promise<string>>()
+      .fn<() => Promise<string>>()
       .mockRejectedValueOnce(new Error('first'))
       .mockResolvedValueOnce('ok');
     await withRetry(fn, {

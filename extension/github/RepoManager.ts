@@ -22,7 +22,10 @@ export class RepoManager {
     });
 
     if (!userResponse.ok) {
-      throw new GitHubApiError(userResponse.status, `Failed to resolve user: ${userResponse.status}`);
+      throw new GitHubApiError(
+        userResponse.status,
+        `Failed to resolve user: ${userResponse.status}`,
+      );
     }
 
     const user = (await userResponse.json()) as { login?: string };

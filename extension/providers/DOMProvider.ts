@@ -12,7 +12,7 @@ function parseDuration(rawDuration: string): number {
   }
 
   const value = Number(match[1]);
-  const unit = match[2].toLowerCase();
+  const unit = match[2]!.toLowerCase();
   return unit.startsWith('h') ? value * 60 : value;
 }
 
@@ -34,9 +34,9 @@ export class DOMProvider implements IMetadataProvider {
 
     return {
       title: snapshot.title,
-      slug: match[2],
+      slug: match[2]!,
       difficulty: snapshot.difficulty.toLowerCase(),
-      format: match[1],
+      format: match[1]!,
       duration: parseDuration(snapshot.duration),
       description: snapshot.description,
       url: snapshot.url,

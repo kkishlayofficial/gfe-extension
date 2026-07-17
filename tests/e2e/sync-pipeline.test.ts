@@ -49,7 +49,7 @@ function makeGitHubHandlers(counter: { blobs: number; commits: number; treeItems
     ),
     http.post(
       'https://api.github.com/repos/me/greatfrontend-solutions/git/trees',
-      async ({ request }) => {
+      async ({ request }: { request: Request }) => {
         const body = (await request.json()) as { tree: Array<{ path: string; content?: string }> };
         counter.treeItems = body.tree;
         return HttpResponse.json({ sha: 'treesha' });
@@ -105,7 +105,9 @@ describe('E2E sync pipeline', () => {
     const bus = new EventBus();
     const states: SyncState[] = [];
     const completed = vi.fn();
-    bus.on('STATE_CHANGED', (e) => states.push(e.payload.state));
+    bus.on('STATE_CHANGED', (e) => {
+      states.push(e.payload.state);
+    });
     bus.on('SYNC_COMPLETED', completed);
 
     const auth = { validateStoredToken: vi.fn(async () => true) };
@@ -127,7 +129,7 @@ describe('E2E sync pipeline', () => {
       ].sort(),
     );
     expect(completed).toHaveBeenCalledOnce();
-    const arg = completed.mock.calls[0][0];
+    const arg = completed.mock.calls[0]![0];
     expect(arg.payload.slug).toBe('event-emitter');
     expect(await HashStore.get('event-emitter')).toBeTruthy();
     expect(states).toEqual([
@@ -146,7 +148,9 @@ describe('E2E sync pipeline', () => {
     const skipped = vi.fn();
     const states: SyncState[] = [];
     bus.on('SYNC_SKIPPED', skipped);
-    bus.on('STATE_CHANGED', (e) => states.push(e.payload.state));
+    bus.on('STATE_CHANGED', (e) => {
+      states.push(e.payload.state);
+    });
 
     const auth = { validateStoredToken: vi.fn(async () => true) };
     const orch = buildOrch(bus, auth);
@@ -160,7 +164,7 @@ describe('E2E sync pipeline', () => {
 
     expect(counter.commits).toBe(priorCommits);
     expect(skipped).toHaveBeenCalledOnce();
-    expect(skipped.mock.calls[0][0].payload).toEqual({
+    expect(skipped.mock.calls[0]![0].payload).toEqual({
       slug: 'event-emitter',
       reason: 'hash_match',
     });

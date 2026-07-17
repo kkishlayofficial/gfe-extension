@@ -47,12 +47,12 @@ describe('GitHubProvider', () => {
       http.post('https://api.github.com/repos/alice/sol/git/blobs', () =>
         HttpResponse.json({ sha: 'B' }, { status: 201 }),
       ),
-      http.post('https://api.github.com/repos/alice/sol/git/trees', async ({ request }) => {
+      http.post('https://api.github.com/repos/alice/sol/git/trees', async ({ request }: { request: Request }) => {
         const body = (await request.json()) as { tree: Array<{ path: string }> };
         for (const item of body.tree) committedPaths.push(item.path);
         return HttpResponse.json({ sha: 'TREE' }, { status: 201 });
       }),
-      http.post('https://api.github.com/repos/alice/sol/git/commits', async ({ request }) => {
+      http.post('https://api.github.com/repos/alice/sol/git/commits', async ({ request }: { request: Request }) => {
         const body = (await request.json()) as { message: string };
         (committedPaths as unknown as { message?: string }).message = body.message;
         return HttpResponse.json({ sha: 'COMMIT' }, { status: 201 });

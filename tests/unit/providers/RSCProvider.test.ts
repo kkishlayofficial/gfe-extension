@@ -45,10 +45,53 @@ describe('RSCProvider', () => {
 
   it('skips non-parseable entries and non-[1,x] entries', async () => {
     const raw = {
-      __next_f: [[0, 'ignored'], [1, 'not json'], [1, JSON.stringify({ question })]],
+      __next_f: [
+        [0, 'ignored'],
+        [1, 'not json'],
+        [1, JSON.stringify({ question })],
+      ],
     };
 
     const meta = await provider.getMetadata(raw);
     expect(meta.slug).toBe('event-emitter');
+  });
+
+  it('derives format from the question URL when format is missing', async () => {
+    const raw = {
+      __next_f: [[1, JSON.stringify({ question: { ...question, format: undefined } })]],
+    };
+
+    const meta = await provider.getMetadata(raw);
+    expect(meta.format).toBe('javascript');
+  });
+
+  it('defaults format to javascript when no URL or format is present', async () => {
+    const raw = {
+      __next_f: [
+        [
+          1,
+          JSON.stringify({
+            question: {
+              title: 'Counter',
+              slug: 'counter',
+              difficulty: 'easy',
+            },
+          }),
+        ],
+      ],
+    };
+
+    const meta = await provider.getMetadata(raw);
+    expect(meta).toMatchObject({
+      title: 'Counter',
+      slug: 'counter',
+      difficulty: 'easy',
+      format: 'javascript',
+      duration: 0,
+      description: '',
+      url: '',
+      languages: [],
+      companies: [],
+    });
   });
 });

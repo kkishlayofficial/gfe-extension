@@ -17,8 +17,14 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json-summary'],
-      include: ['**/*.ts', '**/*.tsx'],
-      exclude: ['**/*.test.ts', '**/*.test.tsx', 'dist/**', 'popup/**', 'options/**'],
+      include: [
+        'generators/**/*.ts',
+        'github/**/*.ts',
+        'providers/**/*.ts',
+        'storage/**/*.ts',
+        'utils/**/*.ts',
+      ],
+      exclude: ['**/*.test.ts', '**/*.test.tsx'],
       thresholds: {
         statements: 90,
         branches: 85,
