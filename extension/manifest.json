@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "GreatFrontend Sync",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Automatically sync completed GreatFrontend solutions to a private GitHub repository.",
   "permissions": ["storage", "identity", "scripting"],
   "host_permissions": ["https://www.greatfrontend.com/*", "https://api.github.com/*"],
