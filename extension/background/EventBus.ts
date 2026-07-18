@@ -12,6 +12,7 @@ const BRIDGED_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   'SYNC_SKIPPED',
   'AUTH_COMPLETE',
   'AUTH_FAILED',
+  'AUTH_REVOKED',
   'TOKEN_EXPIRED',
 ]);
 

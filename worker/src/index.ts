@@ -6,7 +6,8 @@ export interface Env {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = request.headers.get('Origin') ?? '';
-    const isAllowedOrigin = origin.endsWith('.chromiumapp.org');
+    const isAllowedOrigin =
+      origin.endsWith('.chromiumapp.org') || origin.startsWith('chrome-extension://');
 
     const corsHeaders: Record<string, string> = {
       'Access-Control-Allow-Origin': isAllowedOrigin ? origin : '',

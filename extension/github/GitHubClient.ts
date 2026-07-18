@@ -251,7 +251,7 @@ export class GitHubClient {
     await this.request(`/repos/${owner}/${repo}/git/refs/${ref}`, {
       method: 'PATCH',
       token,
-      body: { sha, force: false },
+      body: { sha, force: true },
     });
   }
 

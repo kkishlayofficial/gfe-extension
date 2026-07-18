@@ -16,16 +16,19 @@ export function SyncSection({ state }: { state: AppState }) {
   return (
     <section className="section">
       <header>
-        <h2>Sync status</h2>
+        <h2>Sync Status</h2>
         <StatusBadge state={state.syncState} />
       </header>
       {state.lastSync ? (
         <p>
-          Last synced <strong>{state.lastSync.title}</strong> ({relative(state.lastSync.syncedAt)})
-          — commit <code>{state.lastSync.commitSha.slice(0, 7)}</code>
+          Last synced <strong>{state.lastSync.title}</strong>{' '}
+          <span className="gfe-muted">·</span>{' '}
+          {relative(state.lastSync.syncedAt)}{' '}
+          <span className="gfe-muted">·</span>{' '}
+          <code className="gfe-sha">{state.lastSync.commitSha.slice(0, 7)}</code>
         </p>
       ) : (
-        <p>No sync recorded yet.</p>
+        <p className="gfe-muted">No sync recorded yet.</p>
       )}
     </section>
   );

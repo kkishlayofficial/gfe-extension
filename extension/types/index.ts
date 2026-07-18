@@ -61,6 +61,7 @@ export const RawMetadataSchema = z.object({
       duration: z.string(),
       description: z.string(),
       url: z.string(),
+      companies: z.array(z.string()).optional(),
     })
     .optional(),
 });

@@ -1,27 +1,60 @@
-import type { AppState, ExtensionMessage } from '../../types';
+import type { AppState } from '../../types';
 
 interface Props {
   state: AppState;
+  authPending: 'connect' | 'disconnect' | null;
+  onConnect: () => void;
+  onDisconnect: () => void;
 }
 
-function send(message: ExtensionMessage): void {
-  chrome.runtime.sendMessage(message);
+function Spinner() {
+  return <span className="gfe-spinner" aria-hidden="true" />;
 }
 
-export function AuthSection({ state }: Props): JSX.Element {
+function GitHubIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+    </svg>
+  );
+}
+
+export function AuthSection({ state, authPending, onConnect, onDisconnect }: Props): JSX.Element {
+  const isConnecting = authPending === 'connect';
+  const isDisconnecting = authPending === 'disconnect';
+
   if (state.auth.connected) {
+    const initial = (state.auth.username ?? 'G')[0]?.toUpperCase() ?? 'G';
     return (
       <section className="gfe-auth gfe-auth--connected">
-        {state.auth.avatarUrl ? (
-          <img
-            className="gfe-avatar"
-            src={state.auth.avatarUrl}
-            alt={state.auth.username ?? 'user'}
-          />
-        ) : null}
+        <div className="gfe-avatar-wrap">
+          {state.auth.avatarUrl ? (
+            <img
+              className="gfe-avatar"
+              src={state.auth.avatarUrl}
+              alt={state.auth.username ?? 'user'}
+            />
+          ) : (
+            <div className="gfe-avatar-placeholder" aria-hidden="true">
+              {initial}
+            </div>
+          )}
+        </div>
         <span className="gfe-username">{state.auth.username ?? 'GitHub user'}</span>
-        <button type="button" onClick={() => send({ type: 'AUTH_REVOKE' })}>
-          Disconnect
+        <button
+          type="button"
+          className="gfe-btn-disconnect"
+          disabled={isDisconnecting}
+          onClick={onDisconnect}
+        >
+          {isDisconnecting ? (
+            <>
+              <Spinner />
+              Disconnecting…
+            </>
+          ) : (
+            'Disconnect'
+          )}
         </button>
       </section>
     );
@@ -30,9 +63,24 @@ export function AuthSection({ state }: Props): JSX.Element {
   if (state.auth.tokenExpired) {
     return (
       <section className="gfe-auth gfe-auth--reconnect">
-        <p className="gfe-auth__message">Token expired, please reconnect.</p>
-        <button type="button" onClick={() => send({ type: 'AUTH_START' })}>
-          Reconnect GitHub
+        <p className="gfe-auth__message">Your token expired. Please reconnect.</p>
+        <button
+          type="button"
+          className="gfe-btn-github"
+          disabled={isConnecting}
+          onClick={onConnect}
+        >
+          {isConnecting ? (
+            <>
+              <Spinner />
+              Connecting…
+            </>
+          ) : (
+            <>
+              <GitHubIcon />
+              Reconnect GitHub
+            </>
+          )}
         </button>
       </section>
     );
@@ -40,8 +88,24 @@ export function AuthSection({ state }: Props): JSX.Element {
 
   return (
     <section className="gfe-auth gfe-auth--disconnected">
-      <button type="button" onClick={() => send({ type: 'AUTH_START' })}>
-        Connect GitHub
+      <p className="gfe-auth__prompt">Connect your GitHub account to sync solutions.</p>
+      <button
+        type="button"
+        className="gfe-btn-github"
+        disabled={isConnecting}
+        onClick={onConnect}
+      >
+        {isConnecting ? (
+          <>
+            <Spinner />
+            Connecting…
+          </>
+        ) : (
+          <>
+            <GitHubIcon />
+            Connect with GitHub
+          </>
+        )}
       </button>
     </section>
   );

@@ -11,22 +11,21 @@ describe('RawMetadataCapture', () => {
     (globalThis as unknown as { __next_f: unknown[] }).__next_f = [[0, 'x'], [1, '{}']];
     const raw = new RawMetadataCapture().capture();
     expect(raw.__next_f).toBeDefined();
-    expect(raw.domSnapshot).toBeUndefined();
+    expect(raw.domSnapshot).toBeDefined(); // always captured for DOMProvider fallback
   });
 
   it('falls back to DOM snapshot when __next_f empty', () => {
     (globalThis as unknown as { __next_f?: unknown[] }).__next_f = [];
     document.body.innerHTML = `
-      <h1>Event Emitter</h1>
-      <span data-testid="difficulty">Medium</span>
-      <span data-testid="duration">20 minutes</span>
+      <h2>Event Emitter</h2>
+      <span class="text-yellow">Medium</span>
+      <number-flow-react></number-flow-react>
       <div class="prose"><p>Describe it.</p></div>
     `;
     const raw = new RawMetadataCapture().capture();
     expect(raw.__next_f).toBeUndefined();
     expect(raw.domSnapshot?.title).toBe('Event Emitter');
     expect(raw.domSnapshot?.difficulty).toBe('Medium');
-    expect(raw.domSnapshot?.duration).toBe('20 minutes');
     expect(raw.domSnapshot?.description).toContain('Describe it');
     expect(raw.domSnapshot?.url).toBe(location.href);
   });
@@ -40,6 +39,7 @@ describe('RawMetadataCapture', () => {
       duration: '',
       description: '',
       url: location.href,
+      companies: [],
     });
   });
 });

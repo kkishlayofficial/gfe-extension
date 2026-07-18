@@ -6,7 +6,10 @@ import { ConfigStore } from '../storage/ConfigStore';
 import { ExtensionStorage } from '../storage/ExtensionStorage';
 import { HashStore } from '../storage/HashStore';
 import {
+  AuthError,
   CaptureResult,
+  GitHubApiError,
+  MetadataUnavailableError,
   QuestionSnapshot,
   QuestionSnapshotSchema,
   RepositoryProvider,
@@ -16,6 +19,49 @@ import {
 } from '../types';
 import { sha256 } from '../utils/Hash';
 import { logger } from '../utils/Logger';
+
+function friendlySyncError(error: unknown): string {
+  if (error instanceof GitHubApiError) {
+    if (error.rateLimited) {
+      return 'GitHub rate limit reached. Please wait a minute and try again.';
+    }
+    switch (error.status) {
+      case 401:
+        return 'GitHub token expired or revoked. Please disconnect and reconnect your account.';
+      case 403:
+        return 'Insufficient GitHub permissions. Please reconnect and grant repo access.';
+      case 404:
+        return 'Repository not found — it may have been deleted or renamed.';
+      case 409:
+        return 'Repository conflict detected. Please try syncing again.';
+      case 422:
+        return 'GitHub rejected the update (invalid data). Please try again.';
+      case 500:
+      case 502:
+      case 503:
+        return 'GitHub is temporarily unavailable. Please try again in a moment.';
+      default:
+        return `GitHub returned an error (${error.status}). Please try again.`;
+    }
+  }
+
+  if (error instanceof MetadataUnavailableError) {
+    return 'Could not read question data from the page. Please reload and try again.';
+  }
+
+  if (error instanceof AuthError || (error instanceof Error && error.message.includes('No valid GitHub token'))) {
+    return 'Not connected to GitHub. Please connect your account first.';
+  }
+
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('network request failed')) {
+      return 'Unable to reach GitHub. Please check your internet connection.';
+    }
+  }
+
+  return 'Sync failed unexpectedly. Please try again.';
+}
 
 interface Deps {
   eventBus: EventBus;
@@ -34,6 +80,11 @@ export class SyncOrchestrator {
 
   getState(): SyncState {
     return this.state;
+  }
+
+  resetTokenValidation(): void {
+    this.tokenValidatedThisSession = false;
+    this.tokenValidThisSession = false;
   }
 
   async handleCapture(capture: CaptureResult): Promise<void> {
@@ -103,8 +154,8 @@ export class SyncOrchestrator {
       });
       await this.setState(SyncState.Success);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      logger.error('sync_failed', { error: message });
+      const message = friendlySyncError(error);
+      logger.error('sync_failed', { error: error instanceof Error ? error.message : String(error) });
       await this.deps.eventBus.emit({ type: 'SYNC_FAILED', payload: { error: message } });
       await this.setState(SyncState.Failed);
     }

@@ -28,8 +28,8 @@ describe('ReadmeGenerator', () => {
   it('generates README with heading, badges, languages, companies, source link, description, and structure', () => {
     const md = new ReadmeGenerator().generate(snapshot);
     expect(md).toContain('# Event Emitter');
-    expect(md).toContain('**Difficulty:** medium');
-    expect(md).toContain('**Format:** javascript');
+    expect(md).toContain('**Difficulty:** Medium');
+    expect(md).toContain('**Format:** JavaScript');
     expect(md).toContain('**Duration:** 30 minutes');
     expect(md).toContain('- js');
     expect(md).toContain('- ts');

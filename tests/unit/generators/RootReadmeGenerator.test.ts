@@ -20,8 +20,8 @@ describe('RootReadmeGenerator', () => {
     const md = new RootReadmeGenerator().generate(idx, 'categorized');
     expect(md).toContain('# GreatFrontend Solutions');
     expect(md).toContain('**Total solutions:** 2');
-    expect(md).toContain('## javascript');
-    expect(md).toContain('## react');
+    expect(md).toContain('## JavaScript');
+    expect(md).toContain('## React');
     expect(md).toContain('[Event Emitter](javascript/event-emitter)');
     expect(md).toContain('[Counter](react/counter)');
   });

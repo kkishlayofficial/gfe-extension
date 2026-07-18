@@ -1,6 +1,18 @@
 import { MarkdownBuilder } from './MarkdownBuilder';
 import type { RepoIndex, SyncConfig } from '../types';
 
+const FORMAT_DISPLAY: Record<string, string> = {
+  javascript: 'JavaScript',
+  'ui-coding': 'User Interface',
+  css: 'CSS',
+  html: 'HTML',
+  react: 'React',
+  vue: 'Vue',
+  angular: 'Angular',
+  svelte: 'Svelte',
+  typescript: 'TypeScript',
+};
+
 export class RootReadmeGenerator {
   generate(index: RepoIndex, layout: SyncConfig['folderLayout']): string {
     const builder = new MarkdownBuilder();
@@ -34,7 +46,9 @@ export class RootReadmeGenerator {
           ];
         });
 
-      builder.heading(2, category).table(['Solution', 'Synced', 'Commit'], rows);
+      builder
+        .heading(2, FORMAT_DISPLAY[category] ?? category)
+        .table(['Solution', 'Synced', 'Commit'], rows);
     }
 
     return builder.build();

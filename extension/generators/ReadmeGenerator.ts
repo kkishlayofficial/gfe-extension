@@ -1,16 +1,38 @@
 import { MarkdownBuilder } from './MarkdownBuilder';
 import type { QuestionSnapshot } from '../types';
 
+const FORMAT_DISPLAY: Record<string, string> = {
+  javascript: 'JavaScript',
+  'ui-coding': 'User Interface',
+  css: 'CSS',
+  html: 'HTML',
+  react: 'React',
+  vue: 'Vue',
+  angular: 'Angular',
+  svelte: 'Svelte',
+  typescript: 'TypeScript',
+};
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 export class ReadmeGenerator {
   generate(snapshot: QuestionSnapshot): string {
     const builder = new MarkdownBuilder();
     const metadata = snapshot.metadata;
 
+    const formatDisplay = FORMAT_DISPLAY[metadata.format] ?? capitalize(metadata.format);
+    const difficultyDisplay = capitalize(metadata.difficulty);
+
     builder
       .heading(1, metadata.title)
-      .badge('Difficulty', metadata.difficulty)
-      .badge('Format', metadata.format)
-      .badge('Duration', `${metadata.duration} minutes`);
+      .badge('Difficulty', difficultyDisplay)
+      .badge('Format', formatDisplay);
+
+    if (metadata.duration > 0) {
+      builder.badge('Duration', `${metadata.duration} minutes`);
+    }
 
     if (metadata.languages.length > 0) {
       builder.heading(2, 'Languages').list(metadata.languages);

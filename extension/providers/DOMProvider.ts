@@ -32,16 +32,33 @@ export class DOMProvider implements IMetadataProvider {
       throw new MetadataUnavailableError(`URL is not a GFE question: ${snapshot.url}`);
     }
 
+    const format = match[1]!;
+    const slug = match[2]!;
+
+    // Derive title: DOM h1 → page <title> → formatted slug
+    const title =
+      snapshot.title ||
+      (typeof document !== 'undefined'
+        ? document.title.split('|')[0].split('–')[0].trim()
+        : '') ||
+      slug
+        .split('-')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+
+    // Difficulty: DOM selector → default 'medium' to satisfy Zod min(1)
+    const difficulty = snapshot.difficulty ? snapshot.difficulty.toLowerCase() : 'medium';
+
     return {
-      title: snapshot.title,
-      slug: match[2]!,
-      difficulty: snapshot.difficulty.toLowerCase(),
-      format: match[1]!,
+      title: title || slug,
+      slug,
+      difficulty,
+      format,
       duration: parseDuration(snapshot.duration),
       description: snapshot.description,
       url: snapshot.url,
       languages: [],
-      companies: [],
+      companies: raw.domSnapshot?.companies ?? [],
     };
   }
 }
