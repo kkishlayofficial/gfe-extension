@@ -71,4 +71,21 @@ chrome.runtime.onStartup.addListener(() => {
 chrome.runtime.onInstalled.addListener(() => {
   logger.info('installed');
   void auth.validateStoredToken();
+
+  // Inject the content script into any GFE tabs that were already open when
+  // the extension was installed or reloaded, so the user doesn't have to
+  // manually refresh.
+  void (async () => {
+    const manifest = chrome.runtime.getManifest();
+    const files = manifest.content_scripts?.[0]?.js ?? [];
+    if (files.length === 0) return;
+    const tabs = await chrome.tabs.query({ url: 'https://www.greatfrontend.com/*' });
+    for (const tab of tabs) {
+      if (tab.id !== undefined) {
+        chrome.scripting
+          .executeScript({ target: { tabId: tab.id }, files })
+          .catch(() => {}); // tab may be a special page — ignore
+      }
+    }
+  })();
 });

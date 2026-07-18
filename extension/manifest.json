@@ -3,7 +3,7 @@
   "name": "GreatFrontend Sync",
   "version": "0.1.0",
   "description": "Automatically sync completed GreatFrontend solutions to a private GitHub repository.",
-  "permissions": ["storage", "identity"],
+  "permissions": ["storage", "identity", "scripting"],
   "host_permissions": ["https://www.greatfrontend.com/*", "https://api.github.com/*"],
   "background": {
     "service_worker": "background/index.ts",
