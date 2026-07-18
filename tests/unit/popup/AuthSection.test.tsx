@@ -19,60 +19,66 @@ function makeState(auth: AppState['auth']): AppState {
 }
 
 describe('AuthSection', () => {
+  const onConnect = vi.fn();
+  const onDisconnect = vi.fn();
+
   beforeEach(() => {
-    chrome.runtime.sendMessage = vi.fn();
+    vi.clearAllMocks();
   });
 
-  it('shows DisconnectedView when not connected', () => {
-    render(<AuthSection state={makeState({ connected: false, tokenExpired: false })} />);
+  function renderSection(auth: AppState['auth'], authPending: 'connect' | 'disconnect' | null = null) {
+    return render(
+      <AuthSection
+        state={makeState(auth)}
+        authPending={authPending}
+        onConnect={onConnect}
+        onDisconnect={onDisconnect}
+      />,
+    );
+  }
 
-    expect(screen.getByRole('button', { name: /connect github/i })).toBeInTheDocument();
+  it('shows DisconnectedView when not connected', () => {
+    renderSection({ connected: false, tokenExpired: false });
+
+    expect(screen.getByRole('button', { name: /connect.*github/i })).toBeInTheDocument();
   });
 
   it('shows ReconnectView when token expired', () => {
-    render(<AuthSection state={makeState({ connected: false, tokenExpired: true })} />);
+    renderSection({ connected: false, tokenExpired: true });
 
     expect(screen.getByRole('button', { name: /reconnect github/i })).toBeInTheDocument();
     expect(screen.getByText(/token expired/i)).toBeInTheDocument();
   });
 
   it('shows ConnectedView with username and avatar', () => {
-    render(
-      <AuthSection
-        state={makeState({ connected: true, tokenExpired: false, username: 'alice', avatarUrl: 'https://av' })}
-      />,
-    );
+    renderSection({ connected: true, tokenExpired: false, username: 'alice', avatarUrl: 'https://av' });
 
     expect(screen.getByText('alice')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /alice/i })).toHaveAttribute('src', 'https://av');
     expect(screen.getByRole('button', { name: /disconnect/i })).toBeInTheDocument();
   });
 
-  it('Connect button sends AUTH_START message', () => {
-    render(<AuthSection state={makeState({ connected: false, tokenExpired: false })} />);
+  it('Connect button calls onConnect', () => {
+    renderSection({ connected: false, tokenExpired: false });
 
-    screen.getByRole('button', { name: /connect github/i }).click();
+    screen.getByRole('button', { name: /connect.*github/i }).click();
 
-    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ type: 'AUTH_START' });
+    expect(onConnect).toHaveBeenCalledOnce();
   });
 
-  it('Reconnect button sends AUTH_START message', () => {
-    render(<AuthSection state={makeState({ connected: false, tokenExpired: true })} />);
+  it('Reconnect button calls onConnect', () => {
+    renderSection({ connected: false, tokenExpired: true });
 
     screen.getByRole('button', { name: /reconnect github/i }).click();
 
-    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ type: 'AUTH_START' });
+    expect(onConnect).toHaveBeenCalledOnce();
   });
 
-  it('Disconnect button sends AUTH_REVOKE message', () => {
-    render(
-      <AuthSection
-        state={makeState({ connected: true, tokenExpired: false, username: 'a', avatarUrl: 'x' })}
-      />,
-    );
+  it('Disconnect button calls onDisconnect', () => {
+    renderSection({ connected: true, tokenExpired: false, username: 'a', avatarUrl: 'x' });
 
     screen.getByRole('button', { name: /disconnect/i }).click();
 
-    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ type: 'AUTH_REVOKE' });
+    expect(onDisconnect).toHaveBeenCalledOnce();
   });
 });

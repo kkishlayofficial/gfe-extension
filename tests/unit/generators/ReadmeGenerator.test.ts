@@ -25,19 +25,26 @@ const snapshot: QuestionSnapshot = {
 };
 
 describe('ReadmeGenerator', () => {
-  it('generates README with heading, badges, languages, companies, source link, description, and structure', () => {
+  it('generates README with heading, shields badges, languages, companies, source link, description, and structure', () => {
     const md = new ReadmeGenerator().generate(snapshot);
     expect(md).toContain('# Event Emitter');
-    expect(md).toContain('**Difficulty:** Medium');
-    expect(md).toContain('**Format:** JavaScript');
-    expect(md).toContain('**Duration:** 30 minutes');
+    expect(md).toContain('Difficulty-Medium-f59e0b');   // shields.io medium badge
+    expect(md).toContain('Format-JavaScript-f7df1e');   // shields.io JS badge
+    expect(md).toContain('Duration-30_min-6b7280');     // shields.io duration badge
     expect(md).toContain('- js');
     expect(md).toContain('- ts');
     expect(md).toContain('- Google');
-    expect(md).toContain('[View on GreatFrontend]');
+    expect(md).toContain('[View on GreatFrontend');
     expect(md).toContain('<p>Build one.</p>');
-    expect(md).toContain('## Project Structure');
-    expect(md).toContain('- src/index.js');
-    expect(md).toContain('- package.json');
+    expect(md).toContain('## 📁 Project Structure');
+    expect(md).toContain('src/index.js');
+    expect(md).toContain('package.json');
+    expect(md).toContain('GFE Sync');
+  });
+
+  it('omits duration badge when duration is 0', () => {
+    const noTimer = { ...snapshot, metadata: { ...snapshot.metadata, duration: 0 } };
+    const md = new ReadmeGenerator().generate(noTimer);
+    expect(md).not.toContain('Duration');
   });
 });

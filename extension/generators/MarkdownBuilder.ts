@@ -11,9 +11,30 @@ export class MarkdownBuilder {
     return this;
   }
 
+  /** Plain bold label: value — kept for compatibility. */
   badge(label: string, value: string): this {
     this.parts.push(`**${label}:** ${value}`);
     return this;
+  }
+
+  /**
+   * Renders a row of shields.io image badges on one line.
+   * Each entry: { alt, label, message, color, extra? }
+   */
+  shieldBadges(
+    badges: Array<{ alt: string; label: string; message: string; color: string; extra?: string }>,
+  ): this {
+    const imgs = badges.map(({ alt, label, message, color, extra = '' }) => {
+      const l = MarkdownBuilder.shieldEncode(label);
+      const m = MarkdownBuilder.shieldEncode(message);
+      return `![${alt}](https://img.shields.io/badge/${l}-${m}-${color}?style=flat-square${extra})`;
+    });
+    this.parts.push(imgs.join(' '));
+    return this;
+  }
+
+  static shieldEncode(s: string): string {
+    return s.replace(/-/g, '--').replace(/_/g, '__').replace(/ /g, '_');
   }
 
   list(items: string[]): this {
@@ -33,6 +54,11 @@ export class MarkdownBuilder {
   codeBlock(language: string, code: string): this {
     this.parts.push(`\`\`\`${language}\n${code}\n\`\`\``);
     return this;
+  }
+
+  /** Renders a Mermaid diagram block — rendered as a chart on GitHub. */
+  mermaid(chart: string): this {
+    return this.codeBlock('mermaid', chart);
   }
 
   hr(): this {

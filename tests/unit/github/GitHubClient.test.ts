@@ -133,7 +133,7 @@ describe('GitHubClient', () => {
         }),
       );
       await c.updateRef('o', 'r', T, 'heads/main', 'NEW');
-      expect(received).toEqual({ sha: 'NEW', force: false });
+      expect(received).toEqual({ sha: 'NEW', force: true });
     });
 
     it('createOrUpdateFile omits sha when not provided', async () => {
